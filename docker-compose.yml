@@ -1,0 +1,66 @@
+version: '3.8'
+
+services:
+  # MongoDB Database
+  mongodb:
+    image: mongo:7.0
+    container_name: notification-mongodb
+    restart: unless-stopped
+    ports:
+      - "27018:27017"
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: admin
+      MONGO_INITDB_ROOT_PASSWORD: password123
+      MONGO_INITDB_DATABASE: notification-service
+    networks:
+      - notification-network
+
+  # Redis for BullMQ
+  redis:
+    image: redis:7-alpine
+    container_name: notification-redis
+    restart: unless-stopped
+    ports:
+      - "6380:6379"
+    networks:
+      - notification-network
+    command: redis-server --appendonly yes
+
+  # NestJS Application
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: notification-app
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    environment:
+      NODE_ENV: production
+      HTTP_PORT: 3000
+      HTTP_HOST: localhost
+      APP_NAME: notification-service
+      APP_ENV: production
+      APP_TIMEZONE: UTC
+      DEBUG_LEVEL: info
+      DEBUG_ENABLE: "true"
+      DATABASE_URI: mongodb://admin:password123@mongodb:27017/notification-service?authSource=admin
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+    depends_on:
+      - mongodb
+      - redis
+    volumes:
+      - ./logs:/app/logs
+    networks:
+      - notification-network
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:3000/api/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 40s
+
+networks:
+  notification-network:
+    driver: bridge
