@@ -1,30 +1,3 @@
-<p align="center">
-  <a href="http://nestjs.com/" target="blank"><img src="https://nestjs.com/img/logo-small.svg" width="120" alt="Nest Logo" /></a>
-</p>
-
-[circleci-image]: https://img.shields.io/circleci/build/github/nestjs/nest/master?token=abc123def456
-[circleci-url]: https://circleci.com/gh/nestjs/nest
-
-  <p align="center">A progressive <a href="http://nodejs.org" target="_blank">Node.js</a> framework for building efficient and scalable server-side applications.</p>
-    <p align="center">
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/v/@nestjs/core.svg" alt="NPM Version" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/l/@nestjs/core.svg" alt="Package License" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/dm/@nestjs/common.svg" alt="NPM Downloads" /></a>
-<a href="https://circleci.com/gh/nestjs/nest" target="_blank"><img src="https://img.shields.io/circleci/build/github/nestjs/nest/master" alt="CircleCI" /></a>
-<a href="https://discord.gg/G7Qnnhy" target="_blank"><img src="https://img.shields.io/badge/discord-online-brightgreen.svg" alt="Discord"/></a>
-<a href="https://opencollective.com/nest#backer" target="_blank"><img src="https://opencollective.com/nest/backers/badge.svg" alt="Backers on Open Collective" /></a>
-<a href="https://opencollective.com/nest#sponsor" target="_blank"><img src="https://opencollective.com/nest/sponsors/badge.svg" alt="Sponsors on Open Collective" /></a>
-  <a href="https://paypal.me/kamilmysliwiec" target="_blank"><img src="https://img.shields.io/badge/Donate-PayPal-ff3f59.svg" alt="Donate us"/></a>
-    <a href="https://opencollective.com/nest#sponsor"  target="_blank"><img src="https://img.shields.io/badge/Support%20us-Open%20Collective-41B883.svg" alt="Support us"></a>
-  <a href="https://twitter.com/nestframework" target="_blank"><img src="https://img.shields.io/twitter/follow/nestframework.svg?style=social&label=Follow" alt="Follow us on Twitter"></a>
-</p>
-  <!--[![Backers on Open Collective](https://opencollective.com/nest/backers/badge.svg)](https://opencollective.com/nest#backer)
-  [![Sponsors on Open Collective](https://opencollective.com/nest/sponsors/badge.svg)](https://opencollective.com/nest#sponsor)-->
-
-## Description
-
-[Nest](https://github.com/nestjs/nest) framework TypeScript starter repository.
-
 ## Project setup
 
 ```bash
@@ -42,6 +15,80 @@ $ npm run start:dev
 
 # production mode
 $ npm run start:prod
+```
+
+## API Endpoints
+
+### 1. Send Notification
+**POST** `/notifications`
+
+Creates and sends notifications to specified users through configured channels (email, UI).
+
+#### Request
+```json
+{
+  "userId": "user-001",
+  "companyId": "company-001",
+  "notificationName": "happy-birthday"
+}
+```
+
+#### Response
+**Success (200 OK)**
+```json
+{
+  "success": true,
+  "message": "Jobs created: 2 on channels: email, ui"
+}
+```
+
+**Error (200 OK with success: false)**
+```json
+{
+  "success": false,
+  "message": "userId and notificationName are required"
+}
+```
+
+### 2. Get UI Notifications
+**GET** `/notifications/ui?userId={userId}&page={page}&limit={limit}`
+
+Retrieves paginated UI notifications for a specific user.
+
+#### Request Parameters
+- `userId` (required): The user's unique identifier
+- `page` (optional): Page number (default: 1)
+- `limit` (optional): Items per page (default: 10)
+
+#### Response
+**Success (200 OK)**
+```json
+{
+  "notifications": [
+    {
+      "notificationName": "birthday",
+      "subject": "Happy Birthday!",
+      "content": "Happy Birthday John! Wishing you a wonderful day!",
+      "userId": "507f1f77bcf86cd799439011",
+      "notificationChannel": "ui",
+      "createdAt": "2024-01-15T10:30:00.000Z",
+      "updatedAt": "2024-01-15T10:30:00.000Z"
+    }
+  ],
+  "page": 1,
+  "limit": 10,
+  "total": 1,
+  "totalPages": 1
+}
+```
+
+**Error (400 Bad Request)**
+```json
+{
+  "statusCode": 400,
+  "message": "UserId is required",
+  "error": "Bad Request"
+}
 ```
 
 ## Docker Compose Setup
