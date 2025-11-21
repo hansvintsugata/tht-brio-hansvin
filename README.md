@@ -172,24 +172,6 @@ Time:        2.123 s
 Ran all test suites.
 ```
 
-#### Test Coverage Report
-```bash
-$ npm run test:cov
-
-> notification-service@0.0.1 test:cov
-> jest --coverage
-
- PASS  src/modules/notification/presentation/processor/email.processor.spec.ts
- PASS  src/modules/notification/presentation/processor/ui.processor.spec.ts
- PASS  src/modules/channel-subscription/application/use-cases/channel-subscription.use-case.spec.ts
- PASS  src/modules/notification/application/use-cases/notification.use-case.spec.ts
-
-Test Suites: 4 passed, 4 total
-Tests:       46 passed, 46 total
-Snapshots:   0 total
-Time:        2.456 s
-```
-
 ## Architecture
 
 ### Project Structure: Clean Architecture & DDD Implementation
