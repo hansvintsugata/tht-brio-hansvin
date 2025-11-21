@@ -38,7 +38,7 @@ services:
     environment:
       NODE_ENV: production
       HTTP_PORT: 3000
-      HTTP_HOST: localhost
+      HTTP_HOST: 0.0.0.0
       APP_NAME: notification-service
       APP_ENV: production
       APP_TIMEZONE: UTC
