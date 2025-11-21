@@ -188,16 +188,6 @@ Test Suites: 4 passed, 4 total
 Tests:       46 passed, 46 total
 Snapshots:   0 total
 Time:        2.456 s
-------------------------------------|---------|----------|---------|---------|-------------------
-File                                | % Stmts | % Branch | % Funcs | % Lines | Uncovered Line #s
-------------------------------------|---------|----------|---------|---------|-------------------
-All files                           |   42.07 |    36.36 |   31.25 |   41.86 |
- src/modules/notification/...       |   83.33 |      100 |   66.66 |   83.33 |
-  email.processor.ts                |     100 |      100 |     100 |     100 |
-  ui.processor.ts                   |     100 |      100 |     100 |     100 |
- src/modules/channel-subscription/... |   90.90 |      100 |     100 |   90.90 |
-  channel-subscription.use-case.ts  |   90.90 |      100 |     100 |   90.90 |
-------------------------------------|---------|----------|---------|---------|-------------------
 ```
 
 ## Architecture
