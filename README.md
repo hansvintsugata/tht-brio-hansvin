@@ -72,12 +72,10 @@ $ docker-compose down && docker-compose up -d --build
 
 **Application Service**
 - **Port**: 3000
-- **Environment**: Production-ready configuration
 
 **MongoDB Database**
 - **Port**: 27018 (mapped from container port 27017)
 - **Credentials**: admin/password123
-- **Database**: notification-service
 
 **Redis Cache/Queue**
 - **Port**: 6380 (mapped from container port 6379)
@@ -87,10 +85,7 @@ $ docker-compose down && docker-compose up -d --build
 
 ## Project Assumptions
 
-
-### System Architecture Assumptions
-
-#### External Service Responsibilities
+### External Service Responsibilities
 The notification service assumes the following responsibilities lie with external systems:
 
 **Scheduling & Timing**:
@@ -107,14 +102,14 @@ The notification service assumes the following responsibilities lie with externa
 - Employee data (names, emails, birth dates, leave balances) is maintained in external systems
 
 
-#### Template System Assumptions
+### Template System Assumptions
 
 **Single Language Support**:
 - All notification templates are currently in English only
 - No multi-language or localization features implemented
 - Template variables use consistent naming conventions
 
-#### Notification Delivery Assumptions
+### Notification Delivery Assumptions
 
 **Email Notifications**:
 - Email service configuration is handled at infrastructure level
@@ -129,16 +124,16 @@ The notification service assumes the following responsibilities lie with externa
 - No batching or delay mechanisms implemented
 - Queue-based processing ensures reliability under load
 
-#### Data Flow Assumptions
+### Data Flow Assumptions
 
 **API Call Pattern**:
 ```
 External System → Notification API → Queue → Processor → Delivery
 ```
 
-### Integration Assumptions
+## Integration Assumptions
 
-#### External System Requirements
+### External System Requirements
 - Must provide valid employee identifiers that exist in the notification service
 - Must handle notification service availability and implement appropriate retry logic
 - Must provide all required data fields for each notification type
@@ -156,45 +151,54 @@ $ npm run test:e2e
 $ npm run test:cov
 ```
 
-## Deployment
+### Test Results
 
-When you're ready to deploy your NestJS application to production, there are some key steps you can take to ensure it runs as efficiently as possible. Check out the [deployment documentation](https://docs.nestjs.com/deployment) for more information.
-
-If you are looking for a cloud-based platform to deploy your NestJS application, check out [Mau](https://mau.nestjs.com), our official platform for deploying NestJS applications on AWS. Mau makes deployment straightforward and fast, requiring just a few simple steps:
-
+#### Unit Test Execution
 ```bash
-$ npm install -g @nestjs/mau
-$ mau deploy
+$ npm run test
+
+> notification-service@0.0.1 test
+> jest
+
+ PASS  src/modules/notification/presentation/processor/email.processor.spec.ts
+ PASS  src/modules/notification/presentation/processor/ui.processor.spec.ts
+ PASS  src/modules/channel-subscription/application/use-cases/channel-subscription.use-case.spec.ts
+ PASS  src/modules/notification/application/use-cases/notification.use-case.spec.ts
+
+Test Suites: 4 passed, 4 total
+Tests:       46 passed, 46 total
+Snapshots:   0 total
+Time:        2.123 s
+Ran all test suites.
 ```
 
-With Mau, you can deploy your application in just a few clicks, allowing you to focus on building features rather than managing infrastructure.
+#### Test Coverage Report
+```bash
+$ npm run test:cov
 
-## Resources
+> notification-service@0.0.1 test:cov
+> jest --coverage
 
-Check out a few resources that may come in handy when working with NestJS:
+ PASS  src/modules/notification/presentation/processor/email.processor.spec.ts
+ PASS  src/modules/notification/presentation/processor/ui.processor.spec.ts
+ PASS  src/modules/channel-subscription/application/use-cases/channel-subscription.use-case.spec.ts
+ PASS  src/modules/notification/application/use-cases/notification.use-case.spec.ts
 
-- Visit the [NestJS Documentation](https://docs.nestjs.com) to learn more about the framework.
-- For questions and support, please visit our [Discord channel](https://discord.gg/G7Qnnhy).
-- To dive deeper and get more hands-on experience, check out our official video [courses](https://courses.nestjs.com/).
-- Deploy your application to AWS with the help of [NestJS Mau](https://mau.nestjs.com) in just a few clicks.
-- Visualize your application graph and interact with the NestJS application in real-time using [NestJS Devtools](https://devtools.nestjs.com).
-- Need help with your project (part-time to full-time)? Check out our official [enterprise support](https://enterprise.nestjs.com).
-- To stay in the loop and get updates, follow us on [X](https://x.com/nestframework) and [LinkedIn](https://linkedin.com/company/nestjs).
-- Looking for a job, or have a job to offer? Check out our official [Jobs board](https://jobs.nestjs.com).
-
-## Support
-
-Nest is an MIT-licensed open source project. It can grow thanks to the sponsors and support by the amazing backers. If you'd like to join them, please [read more here](https://docs.nestjs.com/support).
-
-## Stay in touch
-
-- Author - [Kamil Myśliwiec](https://twitter.com/kammysliwiec)
-- Website - [https://nestjs.com](https://nestjs.com/)
-- Twitter - [@nestframework](https://twitter.com/nestframework)
-
-## License
-
-Nest is [MIT licensed](https://github.com/nestjs/nest/blob/master/LICENSE).
+Test Suites: 4 passed, 4 total
+Tests:       46 passed, 46 total
+Snapshots:   0 total
+Time:        2.456 s
+------------------------------------|---------|----------|---------|---------|-------------------
+File                                | % Stmts | % Branch | % Funcs | % Lines | Uncovered Line #s
+------------------------------------|---------|----------|---------|---------|-------------------
+All files                           |   42.07 |    36.36 |   31.25 |   41.86 |
+ src/modules/notification/...       |   83.33 |      100 |   66.66 |   83.33 |
+  email.processor.ts                |     100 |      100 |     100 |     100 |
+  ui.processor.ts                   |     100 |      100 |     100 |     100 |
+ src/modules/channel-subscription/... |   90.90 |      100 |     100 |   90.90 |
+  channel-subscription.use-case.ts  |   90.90 |      100 |     100 |   90.90 |
+------------------------------------|---------|----------|---------|---------|-------------------
+```
 
 ## Architecture
 
@@ -345,14 +349,3 @@ src/
 - **Database**: TypeORM with repository pattern
 - **Testing**: Jest with comprehensive test coverage
 - **Validation**: Class Validator for input validation
-
-#### Example Flow: Email Notification
-
-1. **API Request** → `NotificationController` (Presentation)
-2. **Business Logic** → `NotificationUseCase` (Application)
-3. **Domain Rules** → `Notification` entity (Domain)
-4. **Queue Job** → `EmailProcessor` (Infrastructure/Presentation)
-5. **Template Processing** → Template replacement (Domain)
-6. **User Data** → `UserDataService` (Infrastructure)
-7. **Persistence** → `NotificationRepository` (Infrastructure)
-
