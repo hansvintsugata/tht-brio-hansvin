@@ -3,7 +3,7 @@ import { NotificationUseCase } from './notification.use-case';
 import { Notification } from '../../domain/entities/notification.entity';
 import { NotificationChannel } from '@common/enums/notification-channel.enum';
 import { CreateNotificationDto } from '../dto/create-notification.dto';
-import { PushNotificationRequestDto } from '../dto/push-notification-request.dto';
+import { PushNotificationRequestDto } from '../../presentation/dto/push-notification.dto';
 import { INotificationRepository } from '../../domain/repository/notification-repository.interface';
 import { ChannelSubscriptionUseCase } from '@modules/channel-subscription/application/use-cases/channel-subscription.use-case';
 import { GetNotificationTemplateUseCase } from '@modules/notification-template/application/use-cases/get-notification-template.use-case';
@@ -79,27 +79,27 @@ describe('NotificationUseCase', () => {
 
   describe('getUiNotificationsByUserPaginated', () => {
     it('should throw error when userId is empty', async () => {
-      await expect(useCase.getUiNotificationsByUserPaginated('')).rejects.toThrow(
-        'User ID is required',
-      );
+      await expect(
+        useCase.getUiNotificationsByUserPaginated(''),
+      ).rejects.toThrow('User ID is required');
     });
 
     it('should throw error when page is less than 1', async () => {
-      await expect(useCase.getUiNotificationsByUserPaginated('user-123', 0)).rejects.toThrow(
-        'Page must be greater than 0',
-      );
+      await expect(
+        useCase.getUiNotificationsByUserPaginated('user-123', 0),
+      ).rejects.toThrow('Page must be greater than 0');
     });
 
     it('should throw error when limit is less than 1', async () => {
-      await expect(useCase.getUiNotificationsByUserPaginated('user-123', 1, 0)).rejects.toThrow(
-        'Limit must be between 1 and 100',
-      );
+      await expect(
+        useCase.getUiNotificationsByUserPaginated('user-123', 1, 0),
+      ).rejects.toThrow('Limit must be between 1 and 100');
     });
 
     it('should throw error when limit is greater than 100', async () => {
-      await expect(useCase.getUiNotificationsByUserPaginated('user-123', 1, 101)).rejects.toThrow(
-        'Limit must be between 1 and 100',
-      );
+      await expect(
+        useCase.getUiNotificationsByUserPaginated('user-123', 1, 101),
+      ).rejects.toThrow('Limit must be between 1 and 100');
     });
 
     it('should return paginated UI notifications successfully', async () => {
@@ -116,12 +116,18 @@ describe('NotificationUseCase', () => {
         }),
       ];
 
-      mockNotificationRepository.getListByNotificationChannelAndUserIdPaginated.mockResolvedValue({
-        notifications: mockNotifications,
-        total: 15,
-      });
+      mockNotificationRepository.getListByNotificationChannelAndUserIdPaginated.mockResolvedValue(
+        {
+          notifications: mockNotifications,
+          total: 15,
+        },
+      );
 
-      const result = await useCase.getUiNotificationsByUserPaginated(userId, page, limit);
+      const result = await useCase.getUiNotificationsByUserPaginated(
+        userId,
+        page,
+        limit,
+      );
 
       expect(result).toEqual({
         notifications: mockNotifications,
@@ -129,12 +135,9 @@ describe('NotificationUseCase', () => {
         totalPages: 2, // 15 total / 10 limit = 2 pages
       });
 
-      expect(mockNotificationRepository.getListByNotificationChannelAndUserIdPaginated).toHaveBeenCalledWith(
-        NotificationChannel.UI,
-        userId,
-        page,
-        limit,
-      );
+      expect(
+        mockNotificationRepository.getListByNotificationChannelAndUserIdPaginated,
+      ).toHaveBeenCalledWith(NotificationChannel.UI, userId, page, limit);
     });
   });
 
@@ -241,7 +244,9 @@ describe('NotificationUseCase', () => {
     });
 
     it('should return error when notification template not found', async () => {
-      mockChannelSubscriptionUseCase.getChannels.mockResolvedValue(mockChannelSubscriptions);
+      mockChannelSubscriptionUseCase.getChannels.mockResolvedValue(
+        mockChannelSubscriptions,
+      );
       mockGetNotificationTemplateUseCase.execute.mockResolvedValue(null);
 
       const result = await useCase.pushNotification(mockRequest);
@@ -260,7 +265,9 @@ describe('NotificationUseCase', () => {
     });
 
     it('should return error when no matching active channels found', async () => {
-      mockChannelSubscriptionUseCase.getChannels.mockResolvedValue(mockChannelSubscriptions);
+      mockChannelSubscriptionUseCase.getChannels.mockResolvedValue(
+        mockChannelSubscriptions,
+      );
       mockGetNotificationTemplateUseCase.execute.mockResolvedValue({
         ...mockNotificationTemplate,
         channelDetails: {
@@ -280,7 +287,8 @@ describe('NotificationUseCase', () => {
         errors: [
           {
             channel: 'general',
-            error: 'No matching active channels found between template and user subscriptions',
+            error:
+              'No matching active channels found between template and user subscriptions',
           },
         ],
         totalJobsCreated: 0,
@@ -288,8 +296,12 @@ describe('NotificationUseCase', () => {
     });
 
     it('should successfully create jobs for matching channels', async () => {
-      mockChannelSubscriptionUseCase.getChannels.mockResolvedValue(mockChannelSubscriptions);
-      mockGetNotificationTemplateUseCase.execute.mockResolvedValue(mockNotificationTemplate);
+      mockChannelSubscriptionUseCase.getChannels.mockResolvedValue(
+        mockChannelSubscriptions,
+      );
+      mockGetNotificationTemplateUseCase.execute.mockResolvedValue(
+        mockNotificationTemplate,
+      );
       mockEmailQueue.add.mockResolvedValue({ id: 'job-1' } as Job);
       mockUiQueue.add.mockResolvedValue({ id: 'job-2' } as Job);
 
@@ -334,9 +346,13 @@ describe('NotificationUseCase', () => {
     });
 
     it('should handle job creation errors gracefully', async () => {
-      mockChannelSubscriptionUseCase.getChannels.mockResolvedValue(mockChannelSubscriptions);
-      mockGetNotificationTemplateUseCase.execute.mockResolvedValue(mockNotificationTemplate);
-      
+      mockChannelSubscriptionUseCase.getChannels.mockResolvedValue(
+        mockChannelSubscriptions,
+      );
+      mockGetNotificationTemplateUseCase.execute.mockResolvedValue(
+        mockNotificationTemplate,
+      );
+
       // Mock the email queue to reject the promise
       mockEmailQueue.add.mockRejectedValue(new Error('Queue error'));
       mockUiQueue.add.mockResolvedValue({ id: 'job-1' } as Job);
@@ -344,10 +360,13 @@ describe('NotificationUseCase', () => {
       const result = await useCase.pushNotification(mockRequest);
 
       // Both channels are added to notifiedChannels, but only UI job is successfully created
-      expect(result.notifiedChannels).toEqual([NotificationChannel.EMAIL, NotificationChannel.UI]);
+      expect(result.notifiedChannels).toEqual([
+        NotificationChannel.EMAIL,
+        NotificationChannel.UI,
+      ]);
       expect(result.success).toBe(true);
       expect(result.errors).toEqual([]); // No synchronous errors caught
-      
+
       // The totalJobsCreated should be 1 since only the UI job was successfully created
       // But the current implementation might be counting both as the promises are added to jobPromises
       // regardless of whether they resolve or reject
@@ -383,7 +402,9 @@ describe('NotificationUseCase', () => {
         ...mockChannelSubscriptions,
         whatsappChannelGroup,
       ]);
-      mockGetNotificationTemplateUseCase.execute.mockResolvedValue(mockTemplateWithUnsupportedChannel);
+      mockGetNotificationTemplateUseCase.execute.mockResolvedValue(
+        mockTemplateWithUnsupportedChannel,
+      );
       mockEmailQueue.add.mockResolvedValue({ id: 'job-1' } as Job);
       mockUiQueue.add.mockResolvedValue({ id: 'job-2' } as Job);
 
@@ -403,7 +424,9 @@ describe('NotificationUseCase', () => {
     });
 
     it('should handle unexpected errors gracefully', async () => {
-      mockChannelSubscriptionUseCase.getChannels.mockRejectedValue(new Error('Unexpected error'));
+      mockChannelSubscriptionUseCase.getChannels.mockRejectedValue(
+        new Error('Unexpected error'),
+      );
 
       const result = await useCase.pushNotification(mockRequest);
 

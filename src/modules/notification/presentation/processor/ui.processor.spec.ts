@@ -80,7 +80,7 @@ describe('UiProcessor', () => {
           content: 'Hello John Doe, welcome to TechCorp Solutions!',
           userId: 'user-001',
           notificationChannel: NotificationChannel.UI,
-        })
+        }),
       );
 
       await processor.process(mockJob);
@@ -102,30 +102,32 @@ describe('UiProcessor', () => {
         data: {
           notificationName: 'announcement-ui',
           subject: 'Important Announcement',
-          content: 'Dear {{fullName}}, your company {{companyName}} has a new update.',
+          content:
+            'Dear {{fullName}}, your company {{companyName}} has a new update.',
           userId: 'user-002',
         },
         updateProgress: jest.fn(),
       } as any;
 
       const userDataWithVariables = {
-      id: 'user-002',
-      firstName: 'Jane',
-      lastName: 'Smith',
-      fullName: 'Jane Smith',
-      companyName: 'InnovateTech',
-      email: 'jane.smith@innovatetech.com',
-    };
+        id: 'user-002',
+        firstName: 'Jane',
+        lastName: 'Smith',
+        fullName: 'Jane Smith',
+        companyName: 'InnovateTech',
+        email: 'jane.smith@innovatetech.com',
+      };
 
       mockUserDataService.getUserById.mockResolvedValue(userDataWithVariables);
       mockNotificationUseCase.createNotification.mockResolvedValue(
         Notification.create({
           notificationName: 'announcement-ui',
           subject: '',
-          content: 'Dear Jane Smith, your company InnovateTech has a new update.',
+          content:
+            'Dear Jane Smith, your company InnovateTech has a new update.',
           userId: 'user-002',
           notificationChannel: NotificationChannel.UI,
-        })
+        }),
       );
 
       await processor.process(jobWithVariables);
@@ -145,21 +147,22 @@ describe('UiProcessor', () => {
         data: {
           notificationName: 'missing-vars-ui',
           subject: 'Test',
-          content: 'Hello {{fullName}}, your role is {{role}} at {{companyName}}.',
+          content:
+            'Hello {{fullName}}, your role is {{role}} at {{companyName}}.',
           userId: 'user-003',
         },
         updateProgress: jest.fn(),
       } as any;
 
       const userDataMissingVars = {
-      id: 'user-003',
-      firstName: 'Bob',
-      lastName: 'Johnson',
-      fullName: 'Bob Johnson',
-      companyName: 'StartupXYZ',
-      email: 'bob.johnson@startupxyz.com',
-      // Note: 'role' is missing from user data
-    };
+        id: 'user-003',
+        firstName: 'Bob',
+        lastName: 'Johnson',
+        fullName: 'Bob Johnson',
+        companyName: 'StartupXYZ',
+        email: 'bob.johnson@startupxyz.com',
+        // Note: 'role' is missing from user data
+      };
 
       mockUserDataService.getUserById.mockResolvedValue(userDataMissingVars);
       mockNotificationUseCase.createNotification.mockResolvedValue(
@@ -169,7 +172,7 @@ describe('UiProcessor', () => {
           content: 'Hello Bob Johnson, your role is {{role}} at StartupXYZ.',
           userId: 'user-003',
           notificationChannel: NotificationChannel.UI,
-        })
+        }),
       );
 
       await processor.process(jobWithMissingVariables);
@@ -185,10 +188,12 @@ describe('UiProcessor', () => {
 
     it('should throw error when user data fetch fails', async () => {
       mockUserDataService.getUserById.mockRejectedValue(
-        new Error('User not found')
+        new Error('User not found'),
       );
 
-      await expect(processor.process(mockJob)).rejects.toThrow('User not found');
+      await expect(processor.process(mockJob)).rejects.toThrow(
+        'User not found',
+      );
 
       expect(mockUserDataService.getUserById).toHaveBeenCalledWith('user-001');
       expect(mockNotificationUseCase.createNotification).not.toHaveBeenCalled();
@@ -198,7 +203,7 @@ describe('UiProcessor', () => {
     it('should continue processing even if notification creation fails', async () => {
       mockUserDataService.getUserById.mockResolvedValue(mockUserData);
       mockNotificationUseCase.createNotification.mockRejectedValue(
-        new Error('Database connection failed')
+        new Error('Database connection failed'),
       );
 
       // Should not throw error, just log the notification creation error
@@ -228,15 +233,17 @@ describe('UiProcessor', () => {
       } as any;
 
       const userDataWithoutVariables = {
-      id: 'user-004',
-      firstName: 'Alice',
-      lastName: 'Brown',
-      fullName: 'Alice Brown',
-      companyName: 'SimpleCorp',
-      email: 'alice.brown@simplecorp.com',
-    };
+        id: 'user-004',
+        firstName: 'Alice',
+        lastName: 'Brown',
+        fullName: 'Alice Brown',
+        companyName: 'SimpleCorp',
+        email: 'alice.brown@simplecorp.com',
+      };
 
-      mockUserDataService.getUserById.mockResolvedValue(userDataWithoutVariables);
+      mockUserDataService.getUserById.mockResolvedValue(
+        userDataWithoutVariables,
+      );
       mockNotificationUseCase.createNotification.mockResolvedValue(
         Notification.create({
           notificationName: 'simple-ui',
@@ -244,7 +251,7 @@ describe('UiProcessor', () => {
           content: 'This is a simple UI notification without any variables.',
           userId: 'user-004',
           notificationChannel: NotificationChannel.UI,
-        })
+        }),
       );
 
       await processor.process(jobWithoutVariables);
@@ -270,12 +277,12 @@ describe('UiProcessor', () => {
     });
 
     it('should handle multiple occurrences of same variable', () => {
-      const template = '{{name}} likes {{name}}\'s new {{item}}';
+      const template = "{{name}} likes {{name}}'s new {{item}}";
       const data = { name: 'John', item: 'car' };
 
       const result = processor['processTemplate'](template, data);
 
-      expect(result).toBe('John likes John\'s new car');
+      expect(result).toBe("John likes John's new car");
     });
 
     it('should leave unmatched variables as-is', () => {
@@ -324,7 +331,7 @@ describe('UiProcessor', () => {
 
       expect(loggerSpy).toHaveBeenCalledWith(
         'UI notification job failed:',
-        mockError
+        mockError,
       );
     });
   });

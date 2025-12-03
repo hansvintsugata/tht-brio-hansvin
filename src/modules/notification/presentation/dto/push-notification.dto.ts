@@ -8,3 +8,13 @@ export interface PushNotificationRequestDto {
   notificationName: string;
   templateData?: Record<string, any>;
 }
+
+export interface PushNotificationResponseDto {
+  success: boolean;
+  notifiedChannels: string[];
+  errors: Array<{
+    channel: string;
+    error: string;
+  }>;
+  totalJobsCreated: number;
+}

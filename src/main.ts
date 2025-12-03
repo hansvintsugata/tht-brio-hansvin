@@ -4,6 +4,7 @@ import { ConfigService } from '@nestjs/config';
 import { plainToInstance } from 'class-transformer';
 import { AppEnvDto } from '@app/dtos/app.env.dto';
 import { validate } from 'class-validator';
+import { ValidationPipe } from '@nestjs/common';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule, {});
@@ -19,6 +20,14 @@ async function bootstrap() {
   process.env.TZ = timezone;
 
   app.setGlobalPrefix(globalPrefix);
+
+  app.useGlobalPipes(
+    new ValidationPipe({
+      whitelist: true,
+      forbidNonWhitelisted: true,
+      transform: true,
+    }),
+  );
 
   // Validate Env
   const classEnv = plainToInstance(AppEnvDto, process.env);

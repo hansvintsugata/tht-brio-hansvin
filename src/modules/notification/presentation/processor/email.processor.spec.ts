@@ -81,7 +81,7 @@ describe('EmailProcessor', () => {
           content: 'Hello John Doe, welcome to TechCorp Solutions!',
           userId: 'user-001',
           notificationChannel: NotificationChannel.EMAIL,
-        })
+        }),
       );
 
       await processor.process(mockJob as Job<EmailJobData>);
@@ -103,11 +103,15 @@ describe('EmailProcessor', () => {
 
       // Verify console output
       expect(consoleLogSpy).toHaveBeenCalledWith('=== EMAIL NOTIFICATION ===');
-      expect(consoleLogSpy).toHaveBeenCalledWith('To: John Doe <john.doe@techcorp.com>');
+      expect(consoleLogSpy).toHaveBeenCalledWith(
+        'To: John Doe <john.doe@techcorp.com>',
+      );
       expect(consoleLogSpy).toHaveBeenCalledWith('Company: TechCorp Solutions');
       expect(consoleLogSpy).toHaveBeenCalledWith('Subject: Welcome John!');
       expect(consoleLogSpy).toHaveBeenCalledWith('Content:');
-      expect(consoleLogSpy).toHaveBeenCalledWith('Hello John Doe, welcome to TechCorp Solutions!');
+      expect(consoleLogSpy).toHaveBeenCalledWith(
+        'Hello John Doe, welcome to TechCorp Solutions!',
+      );
       expect(consoleLogSpy).toHaveBeenCalledWith('========================');
     });
 
@@ -130,7 +134,7 @@ describe('EmailProcessor', () => {
           content: 'Your {{nonExistent}} variable',
           userId: 'user-001',
           notificationChannel: NotificationChannel.EMAIL,
-        })
+        }),
       );
 
       await processor.process(jobWithMissingVars as Job<EmailJobData>);
@@ -148,7 +152,9 @@ describe('EmailProcessor', () => {
       const error = new Error('User not found');
       mockUserDataService.getUserById.mockRejectedValue(error);
 
-      await expect(processor.process(mockJob as Job<EmailJobData>)).rejects.toThrow('User not found');
+      await expect(
+        processor.process(mockJob as Job<EmailJobData>),
+      ).rejects.toThrow('User not found');
 
       expect(mockNotificationUseCase.createNotification).not.toHaveBeenCalled();
       expect(mockJob.updateProgress).not.toHaveBeenCalled();
@@ -157,7 +163,9 @@ describe('EmailProcessor', () => {
     it('should continue processing even if notification creation fails', async () => {
       mockUserDataService.getUserById.mockResolvedValue(mockUserData);
       const notificationError = new Error('Database connection failed');
-      mockNotificationUseCase.createNotification.mockRejectedValue(notificationError);
+      mockNotificationUseCase.createNotification.mockRejectedValue(
+        notificationError,
+      );
 
       // Mock logger to verify error was logged
       const loggerErrorSpy = jest.spyOn(processor['logger'], 'error');
@@ -195,7 +203,7 @@ describe('EmailProcessor', () => {
           content: 'Hello Unknown User, welcome to Unknown Company!',
           userId: 'user-999',
           notificationChannel: NotificationChannel.EMAIL,
-        })
+        }),
       );
 
       const jobForUnknownUser = {
@@ -221,7 +229,8 @@ describe('EmailProcessor', () => {
 
   describe('processTemplate', () => {
     it('should replace template variables with user data', () => {
-      const template = 'Hello {{firstName}} {{lastName}}, welcome to {{companyName}}!';
+      const template =
+        'Hello {{firstName}} {{lastName}}, welcome to {{companyName}}!';
       const data = {
         firstName: 'John',
         lastName: 'Doe',
@@ -268,16 +277,21 @@ describe('EmailProcessor', () => {
     it('should log completion event', () => {
       const loggerLogSpy = jest.spyOn(processor['logger'], 'log');
       processor.onCompleted();
-      expect(loggerLogSpy).toHaveBeenCalledWith('Email notification job completed');
+      expect(loggerLogSpy).toHaveBeenCalledWith(
+        'Email notification job completed',
+      );
     });
 
     it('should log failure event with error', () => {
       const loggerErrorSpy = jest.spyOn(processor['logger'], 'error');
       const mockError = new Error('Job failed');
       const mockJob = { id: 'job-123' } as Job;
-      
+
       processor.onFailed(mockJob, mockError);
-      expect(loggerErrorSpy).toHaveBeenCalledWith('Email notification job failed:', mockError);
+      expect(loggerErrorSpy).toHaveBeenCalledWith(
+        'Email notification job failed:',
+        mockError,
+      );
     });
   });
 });

@@ -2,7 +2,7 @@ import { Controller, Get, Query, BadRequestException } from '@nestjs/common';
 import {
   GetUiNotificationsRequestDto,
   GetUiNotificationsResponseDto,
-} from '../../application/dto/get-ui-notifications.dto';
+} from '../dto/get-ui-notifications.dto';
 import { NotificationUseCase } from '../../application/use-cases/notification.use-case';
 
 @Controller('notifications')

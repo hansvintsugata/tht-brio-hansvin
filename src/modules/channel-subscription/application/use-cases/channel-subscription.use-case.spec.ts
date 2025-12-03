@@ -1,6 +1,9 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { ChannelSubscriptionUseCase } from './channel-subscription.use-case';
-import { GetChannelsRequestDto, ChannelGroupDto } from '../dto/get-channels.dto';
+import {
+  GetChannelsRequestDto,
+  ChannelGroupDto,
+} from '../dto/get-channels.dto';
 import { ChannelSubscription } from '../../domain/entities/channel-subscription.entity';
 import { SubscriberType } from '@common/enums/subscriber-types.enum';
 import { NotificationChannel } from '@common/enums/notification-channel.enum';
@@ -26,7 +29,9 @@ describe('ChannelSubscriptionUseCase', () => {
       ],
     }).compile();
 
-    useCase = module.get<ChannelSubscriptionUseCase>(ChannelSubscriptionUseCase);
+    useCase = module.get<ChannelSubscriptionUseCase>(
+      ChannelSubscriptionUseCase,
+    );
   });
 
   afterEach(() => {
@@ -61,7 +66,9 @@ describe('ChannelSubscriptionUseCase', () => {
         }),
       ];
 
-      mockRepository.findBySubscriberIdAndType.mockResolvedValue(mockSubscriptions);
+      mockRepository.findBySubscriberIdAndType.mockResolvedValue(
+        mockSubscriptions,
+      );
 
       const result = await useCase.getChannels(request);
 
@@ -90,7 +97,9 @@ describe('ChannelSubscriptionUseCase', () => {
         }),
       ];
 
-      mockRepository.findBySubscriberIdAndType.mockResolvedValue(mockSubscriptions);
+      mockRepository.findBySubscriberIdAndType.mockResolvedValue(
+        mockSubscriptions,
+      );
 
       const result = await useCase.getChannels(request);
 
@@ -238,20 +247,26 @@ describe('ChannelSubscriptionUseCase', () => {
         }),
       ];
 
-      mockRepository.findBySubscriberIdAndType.mockResolvedValue(mockSubscriptions);
+      mockRepository.findBySubscriberIdAndType.mockResolvedValue(
+        mockSubscriptions,
+      );
 
       const result = await useCase.getChannels(request);
 
       expect(result).toHaveLength(2); // EMAIL and SMS
-      
-      const emailGroup = result.find(group => group.channel === NotificationChannel.EMAIL);
-      const smsGroup = result.find(group => group.channel === NotificationChannel.SMS);
-      
+
+      const emailGroup = result.find(
+        (group) => group.channel === NotificationChannel.EMAIL,
+      );
+      const smsGroup = result.find(
+        (group) => group.channel === NotificationChannel.SMS,
+      );
+
       expect(emailGroup).toBeDefined();
-      expect(emailGroup!.subscriptions).toHaveLength(2);
-      
+      expect(emailGroup.subscriptions).toHaveLength(2);
+
       expect(smsGroup).toBeDefined();
-      expect(smsGroup!.subscriptions).toHaveLength(1);
+      expect(smsGroup.subscriptions).toHaveLength(1);
     });
 
     it('should preserve both active and inactive subscriptions', async () => {
@@ -273,17 +288,23 @@ describe('ChannelSubscriptionUseCase', () => {
         }),
       ];
 
-      mockRepository.findBySubscriberIdAndType.mockResolvedValue(mockSubscriptions);
+      mockRepository.findBySubscriberIdAndType.mockResolvedValue(
+        mockSubscriptions,
+      );
 
       const result = await useCase.getChannels(request);
 
       expect(result).toHaveLength(2);
-      
-      const emailGroup = result.find(group => group.channel === NotificationChannel.EMAIL);
-      const smsGroup = result.find(group => group.channel === NotificationChannel.SMS);
-      
-      expect(emailGroup!.subscriptions[0].isActive).toBe(true);
-      expect(smsGroup!.subscriptions[0].isActive).toBe(false);
+
+      const emailGroup = result.find(
+        (group) => group.channel === NotificationChannel.EMAIL,
+      );
+      const smsGroup = result.find(
+        (group) => group.channel === NotificationChannel.SMS,
+      );
+
+      expect(emailGroup.subscriptions[0].isActive).toBe(true);
+      expect(smsGroup.subscriptions[0].isActive).toBe(false);
     });
   });
 });

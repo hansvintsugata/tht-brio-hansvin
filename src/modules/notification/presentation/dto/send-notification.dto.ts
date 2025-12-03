@@ -1,6 +1,16 @@
+import { IsString, IsNotEmpty, IsOptional } from 'class-validator';
+
 export class SendNotificationRequestDto {
-  userId?: string;
+  @IsString()
+  @IsNotEmpty()
+  userId: string;
+
+  @IsString()
+  @IsOptional()
   companyId?: string;
+
+  @IsString()
+  @IsNotEmpty()
   notificationName: string;
 }
 
