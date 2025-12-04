@@ -21,13 +21,13 @@ async function bootstrap() {
 
   app.setGlobalPrefix(globalPrefix);
 
-  app.useGlobalPipes(
-    new ValidationPipe({
-      whitelist: true,
-      forbidNonWhitelisted: true,
-      transform: true,
-    }),
-  );
+  // app.useGlobalPipes(
+  //   new ValidationPipe({
+  //     whitelist: true,
+  //     forbidNonWhitelisted: true,
+  //     transform: true,
+  //   }),
+  // );
 
   // Validate Env
   const classEnv = plainToInstance(AppEnvDto, process.env);

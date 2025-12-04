@@ -3,9 +3,13 @@ import { Notification } from '../../domain/entities/notification.entity';
 import type { INotificationRepository } from '../../domain/repository/notification-repository.interface';
 import { NotificationChannel } from '@common/enums/notification-channel.enum';
 import { CreateNotificationDto } from '../dto/create-notification.dto';
-import { PushNotificationRequestDto, PushNotificationResponseDto } from '../../presentation/dto/push-notification.dto';
+import {
+  PushNotificationRequestDto,
+  PushNotificationResponseDto,
+} from '../../presentation/dto/push-notification.dto';
 import { ChannelSubscriptionUseCase } from '@modules/channel-subscription/application/use-cases/channel-subscription.use-case';
 import { GetNotificationTemplateUseCase } from '@modules/notification-template/application/use-cases/get-notification-template.use-case';
+import { UserDataService } from '../../infrastructure/outbound/user-data.service';
 import { Queue } from 'bullmq';
 import { InjectQueue } from '@nestjs/bullmq';
 
@@ -16,6 +20,7 @@ export class NotificationUseCase {
     private readonly notificationRepository: INotificationRepository,
     private readonly channelSubscriptionUseCase: ChannelSubscriptionUseCase,
     private readonly getNotificationTemplateUseCase: GetNotificationTemplateUseCase,
+    private readonly userDataService: UserDataService,
     @InjectQueue('email-notifications') private emailQueue: Queue,
     @InjectQueue('ui-notifications') private uiQueue: Queue,
   ) {}
@@ -153,11 +158,17 @@ export class NotificationUseCase {
         return response;
       }
 
-      // Step 4: Create jobs for each channel
+      // Step 4: Fetch user data and render templates in domain
+      const userData = await this.userDataService.getUserById(userId);
+
+      // Step 5: Create jobs for each channel using pre-rendered content
       const jobPromises = [];
 
       for (const channel of channelsToNotify) {
-        const channelDetail = notificationTemplate.channelDetails[channel];
+        const { subject, content } = notificationTemplate.render(
+          channel,
+          userData,
+        );
 
         try {
           let jobPromise;
@@ -167,8 +178,8 @@ export class NotificationUseCase {
                 'send-email',
                 {
                   notificationName,
-                  subject: channelDetail.subject || notificationName,
-                  content: channelDetail.body || '',
+                  subject,
+                  content,
                   userId,
                 },
                 {
@@ -185,8 +196,8 @@ export class NotificationUseCase {
                 'send-ui',
                 {
                   notificationName,
-                  subject: channelDetail.subject || notificationName,
-                  content: channelDetail.body || '',
+                  subject,
+                  content,
                   userId,
                 },
                 {

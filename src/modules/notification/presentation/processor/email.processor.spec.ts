@@ -2,7 +2,6 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { Job } from 'bullmq';
 import { EmailProcessor } from './email.processor';
 import { NotificationUseCase } from '../../application/use-cases/notification.use-case';
-import { UserDataService } from '../../infrastructure/outbound/user-data.service';
 import { EmailJobData } from '../../application/dto/email-job-data.dto';
 import { NotificationChannel } from '@common/enums/notification-channel.enum';
 import { Notification } from '../../domain/entities/notification.entity';
@@ -10,7 +9,6 @@ import { Notification } from '../../domain/entities/notification.entity';
 describe('EmailProcessor', () => {
   let processor: EmailProcessor;
   let mockNotificationUseCase: jest.Mocked<NotificationUseCase>;
-  let mockUserDataService: jest.Mocked<UserDataService>;
   let mockJob: Partial<Job<EmailJobData>>;
   let consoleLogSpy: jest.SpyInstance;
 
@@ -20,20 +18,16 @@ describe('EmailProcessor', () => {
       createNotification: jest.fn(),
     } as any;
 
-    mockUserDataService = {
-      getUserById: jest.fn(),
-    } as any;
-
     // Mock console.log to avoid cluttering test output
     consoleLogSpy = jest.spyOn(console, 'log').mockImplementation();
 
-    // Mock job object
+    // Mock job object (pre-rendered content)
     mockJob = {
       id: 'job-123',
       data: {
         notificationName: 'welcome-email',
-        subject: 'Welcome {{firstName}}!',
-        content: 'Hello {{fullName}}, welcome to {{companyName}}!',
+        subject: 'Welcome John!',
+        content: 'Hello John Doe, welcome to TechCorp Solutions!',
         userId: 'user-001',
       },
       updateProgress: jest.fn(),
@@ -45,10 +39,6 @@ describe('EmailProcessor', () => {
         {
           provide: NotificationUseCase,
           useValue: mockNotificationUseCase,
-        },
-        {
-          provide: UserDataService,
-          useValue: mockUserDataService,
         },
       ],
     }).compile();
@@ -62,18 +52,7 @@ describe('EmailProcessor', () => {
   });
 
   describe('process', () => {
-    const mockUserData = {
-      id: 'user-001',
-      email: 'john.doe@techcorp.com',
-      firstName: 'John',
-      lastName: 'Doe',
-      fullName: 'John Doe',
-      companyName: 'TechCorp Solutions',
-      phone: '+1-555-0123',
-    };
-
     it('should process email job successfully', async () => {
-      mockUserDataService.getUserById.mockResolvedValue(mockUserData);
       mockNotificationUseCase.createNotification.mockResolvedValue(
         Notification.create({
           notificationName: 'welcome-email',
@@ -86,10 +65,7 @@ describe('EmailProcessor', () => {
 
       await processor.process(mockJob as Job<EmailJobData>);
 
-      // Verify user data was fetched
-      expect(mockUserDataService.getUserById).toHaveBeenCalledWith('user-001');
-
-      // Verify notification was created with processed template
+      // Verify notification was created with provided content
       expect(mockNotificationUseCase.createNotification).toHaveBeenCalledWith({
         notificationName: 'welcome-email',
         subject: 'Welcome John!',
@@ -103,10 +79,7 @@ describe('EmailProcessor', () => {
 
       // Verify console output
       expect(consoleLogSpy).toHaveBeenCalledWith('=== EMAIL NOTIFICATION ===');
-      expect(consoleLogSpy).toHaveBeenCalledWith(
-        'To: John Doe <john.doe@techcorp.com>',
-      );
-      expect(consoleLogSpy).toHaveBeenCalledWith('Company: TechCorp Solutions');
+      expect(consoleLogSpy).toHaveBeenCalledWith('To: User user-001');
       expect(consoleLogSpy).toHaveBeenCalledWith('Subject: Welcome John!');
       expect(consoleLogSpy).toHaveBeenCalledWith('Content:');
       expect(consoleLogSpy).toHaveBeenCalledWith(
@@ -125,8 +98,6 @@ describe('EmailProcessor', () => {
           userId: 'user-001',
         },
       };
-
-      mockUserDataService.getUserById.mockResolvedValue(mockUserData);
       mockNotificationUseCase.createNotification.mockResolvedValue(
         Notification.create({
           notificationName: 'test-email',
@@ -148,20 +119,13 @@ describe('EmailProcessor', () => {
       });
     });
 
-    it('should handle user data service errors', async () => {
-      const error = new Error('User not found');
-      mockUserDataService.getUserById.mockRejectedValue(error);
-
-      await expect(
-        processor.process(mockJob as Job<EmailJobData>),
-      ).rejects.toThrow('User not found');
-
-      expect(mockNotificationUseCase.createNotification).not.toHaveBeenCalled();
-      expect(mockJob.updateProgress).not.toHaveBeenCalled();
+    it('should handle generic processing path without user data', async () => {
+      await processor.process(mockJob as Job<EmailJobData>);
+      expect(mockNotificationUseCase.createNotification).toHaveBeenCalled();
+      expect(mockJob.updateProgress).toHaveBeenCalledWith(100);
     });
 
     it('should continue processing even if notification creation fails', async () => {
-      mockUserDataService.getUserById.mockResolvedValue(mockUserData);
       const notificationError = new Error('Database connection failed');
       mockNotificationUseCase.createNotification.mockRejectedValue(
         notificationError,
@@ -185,17 +149,7 @@ describe('EmailProcessor', () => {
       expect(mockJob.updateProgress).toHaveBeenCalledWith(100);
     });
 
-    it('should handle default user data when user not found', async () => {
-      const defaultUserData = {
-        id: 'user-999',
-        email: 'user-user-999@example.com',
-        firstName: 'Unknown',
-        lastName: 'User',
-        fullName: 'Unknown User',
-        companyName: 'Unknown Company',
-      };
-
-      mockUserDataService.getUserById.mockResolvedValue(defaultUserData);
+    it('should handle default content when user is unknown (pre-rendered)', async () => {
       mockNotificationUseCase.createNotification.mockResolvedValue(
         Notification.create({
           notificationName: 'welcome-email',
@@ -209,14 +163,15 @@ describe('EmailProcessor', () => {
       const jobForUnknownUser = {
         ...mockJob,
         data: {
-          ...mockJob.data,
+          notificationName: 'welcome-email',
+          subject: 'Welcome Unknown!',
+          content: 'Hello Unknown User, welcome to Unknown Company!',
           userId: 'user-999',
         },
       };
 
       await processor.process(jobForUnknownUser as Job<EmailJobData>);
 
-      expect(mockUserDataService.getUserById).toHaveBeenCalledWith('user-999');
       expect(mockNotificationUseCase.createNotification).toHaveBeenCalledWith({
         notificationName: 'welcome-email',
         subject: 'Welcome Unknown!',
@@ -227,51 +182,7 @@ describe('EmailProcessor', () => {
     });
   });
 
-  describe('processTemplate', () => {
-    it('should replace template variables with user data', () => {
-      const template =
-        'Hello {{firstName}} {{lastName}}, welcome to {{companyName}}!';
-      const data = {
-        firstName: 'John',
-        lastName: 'Doe',
-        companyName: 'TechCorp',
-      };
-
-      const result = processor['processTemplate'](template, data);
-      expect(result).toBe('Hello John Doe, welcome to TechCorp!');
-    });
-
-    it('should leave unmatched variables as-is', () => {
-      const template = 'Hello {{firstName}}, your {{missingVar}} is ready!';
-      const data = {
-        firstName: 'John',
-      };
-
-      const result = processor['processTemplate'](template, data);
-      expect(result).toBe('Hello John, your {{missingVar}} is ready!');
-    });
-
-    it('should handle empty template', () => {
-      const result = processor['processTemplate']('', {});
-      expect(result).toBe('');
-    });
-
-    it('should handle template with no variables', () => {
-      const template = 'Simple text without variables';
-      const result = processor['processTemplate'](template, {});
-      expect(result).toBe('Simple text without variables');
-    });
-
-    it('should handle multiple occurrences of same variable', () => {
-      const template = '{{name}} says hello, {{name}} is here!';
-      const data = {
-        name: 'John',
-      };
-
-      const result = processor['processTemplate'](template, data);
-      expect(result).toBe('John says hello, John is here!');
-    });
-  });
+  // No template processing tests in processor; rendering moved to domain/use case
 
   describe('event handlers', () => {
     it('should log completion event', () => {

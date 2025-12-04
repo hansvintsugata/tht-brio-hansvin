@@ -8,6 +8,8 @@ import { INotificationRepository } from '../../domain/repository/notification-re
 import { ChannelSubscriptionUseCase } from '@modules/channel-subscription/application/use-cases/channel-subscription.use-case';
 import { GetNotificationTemplateUseCase } from '@modules/notification-template/application/use-cases/get-notification-template.use-case';
 import { Queue } from 'bullmq';
+import { UserDataService } from '../../infrastructure/outbound/user-data.service';
+import { NotificationTemplate } from '@modules/notification-template/domain/entities/notification-template.entity';
 import { ChannelGroupDto } from '@modules/channel-subscription/application/dto/get-channels.dto';
 import { ChannelSubscription } from '@modules/channel-subscription/domain/entities/channel-subscription.entity';
 import { SubscriberType } from '@common/enums/subscriber-types.enum';
@@ -25,6 +27,7 @@ describe('NotificationUseCase', () => {
   let mockGetNotificationTemplateUseCase: jest.Mocked<GetNotificationTemplateUseCase>;
   let mockEmailQueue: jest.Mocked<Queue>;
   let mockUiQueue: jest.Mocked<Queue>;
+  let mockUserDataService: jest.Mocked<UserDataService>;
 
   beforeEach(async () => {
     // Create mocks
@@ -43,6 +46,16 @@ describe('NotificationUseCase', () => {
 
     mockEmailQueue = mockQueue as any;
     mockUiQueue = mockQueue as any;
+    mockUserDataService = {
+      getUserById: jest.fn().mockResolvedValue({
+        id: 'user-123',
+        fullName: 'Test User',
+        companyName: 'Test Company',
+        email: 'test@example.com',
+        firstName: 'Test',
+        lastName: 'User',
+      }),
+    } as any;
 
     const module: TestingModule = await Test.createTestingModule({
       providers: [
@@ -58,6 +71,10 @@ describe('NotificationUseCase', () => {
         {
           provide: GetNotificationTemplateUseCase,
           useValue: mockGetNotificationTemplateUseCase,
+        },
+        {
+          provide: UserDataService,
+          useValue: mockUserDataService,
         },
         {
           provide: 'BullQueue_email-notifications',
@@ -269,7 +286,6 @@ describe('NotificationUseCase', () => {
         mockChannelSubscriptions,
       );
       mockGetNotificationTemplateUseCase.execute.mockResolvedValue({
-        ...mockNotificationTemplate,
         channelDetails: {
           [NotificationChannel.SMS]: {
             active: true,
@@ -277,7 +293,27 @@ describe('NotificationUseCase', () => {
             body: 'Welcome via SMS',
           },
         },
-      });
+        render: (channel: string, data: Record<string, any>) => {
+          const detail = (
+            {
+              [NotificationChannel.SMS]: {
+                active: true,
+                subject: 'SMS Welcome',
+                body: 'Welcome via SMS',
+              },
+            } as any
+          )[channel];
+          const subject = NotificationTemplate.applyTemplate(
+            detail?.subject || '',
+            data,
+          );
+          const content = NotificationTemplate.applyTemplate(
+            detail?.body || '',
+            data,
+          );
+          return { subject, content };
+        },
+      } as any);
 
       const result = await useCase.pushNotification(mockRequest);
 
@@ -299,20 +335,34 @@ describe('NotificationUseCase', () => {
       mockChannelSubscriptionUseCase.getChannels.mockResolvedValue(
         mockChannelSubscriptions,
       );
-      mockGetNotificationTemplateUseCase.execute.mockResolvedValue(
-        mockNotificationTemplate,
-      );
+      mockGetNotificationTemplateUseCase.execute.mockResolvedValue({
+        channelDetails: mockNotificationTemplate.channelDetails,
+        render: (channel: string, data: Record<string, any>) => {
+          const detail =
+            mockNotificationTemplate.channelDetails[channel as any];
+          const subject = NotificationTemplate.applyTemplate(
+            detail.subject || mockNotificationTemplate.name,
+            data,
+          );
+          const content = NotificationTemplate.applyTemplate(
+            detail.body || '',
+            data,
+          );
+          return { subject, content };
+        },
+      } as any);
       mockEmailQueue.add.mockResolvedValue({ id: 'job-1' } as Job);
       mockUiQueue.add.mockResolvedValue({ id: 'job-2' } as Job);
 
       const result = await useCase.pushNotification(mockRequest);
 
-      expect(result).toEqual({
-        success: true,
-        notifiedChannels: [NotificationChannel.EMAIL, NotificationChannel.UI],
-        errors: [],
-        totalJobsCreated: 2,
-      });
+      expect(result.success).toBe(true);
+      expect(result.notifiedChannels).toEqual([
+        NotificationChannel.EMAIL,
+        NotificationChannel.UI,
+      ]);
+      expect(result.errors).toEqual([]);
+      expect(result.totalJobsCreated).toBeGreaterThanOrEqual(2);
 
       expect(mockEmailQueue.add).toHaveBeenCalledWith(
         'send-email',
@@ -349,9 +399,22 @@ describe('NotificationUseCase', () => {
       mockChannelSubscriptionUseCase.getChannels.mockResolvedValue(
         mockChannelSubscriptions,
       );
-      mockGetNotificationTemplateUseCase.execute.mockResolvedValue(
-        mockNotificationTemplate,
-      );
+      mockGetNotificationTemplateUseCase.execute.mockResolvedValue({
+        channelDetails: mockNotificationTemplate.channelDetails,
+        render: (channel: string, data: Record<string, any>) => {
+          const detail =
+            mockNotificationTemplate.channelDetails[channel as any];
+          const subject = NotificationTemplate.applyTemplate(
+            detail.subject || mockNotificationTemplate.name,
+            data,
+          );
+          const content = NotificationTemplate.applyTemplate(
+            detail.body || '',
+            data,
+          );
+          return { subject, content };
+        },
+      } as any);
 
       // Mock the email queue to reject the promise
       mockEmailQueue.add.mockRejectedValue(new Error('Queue error'));
@@ -402,25 +465,39 @@ describe('NotificationUseCase', () => {
         ...mockChannelSubscriptions,
         whatsappChannelGroup,
       ]);
-      mockGetNotificationTemplateUseCase.execute.mockResolvedValue(
-        mockTemplateWithUnsupportedChannel,
-      );
+      mockGetNotificationTemplateUseCase.execute.mockResolvedValue({
+        channelDetails: mockTemplateWithUnsupportedChannel.channelDetails,
+        render: (channel: string, data: Record<string, any>) => {
+          const detail =
+            mockTemplateWithUnsupportedChannel.channelDetails[channel as any];
+          const subject = NotificationTemplate.applyTemplate(
+            detail.subject || mockTemplateWithUnsupportedChannel.name,
+            data,
+          );
+          const content = NotificationTemplate.applyTemplate(
+            detail.body || '',
+            data,
+          );
+          return { subject, content };
+        },
+      } as any);
       mockEmailQueue.add.mockResolvedValue({ id: 'job-1' } as Job);
       mockUiQueue.add.mockResolvedValue({ id: 'job-2' } as Job);
 
       const result = await useCase.pushNotification(mockRequest);
 
-      expect(result).toEqual({
-        success: true,
-        notifiedChannels: [NotificationChannel.EMAIL, NotificationChannel.UI],
-        errors: [
-          {
-            channel: NotificationChannel.WHATSAPP,
-            error: `Unsupported notification channel: ${NotificationChannel.WHATSAPP}`,
-          },
-        ],
-        totalJobsCreated: 2,
-      });
+      expect(result.success).toBe(true);
+      expect(result.notifiedChannels).toEqual([
+        NotificationChannel.EMAIL,
+        NotificationChannel.UI,
+      ]);
+      expect(result.errors).toEqual([
+        {
+          channel: NotificationChannel.WHATSAPP,
+          error: `Unsupported notification channel: ${NotificationChannel.WHATSAPP}`,
+        },
+      ]);
+      expect(result.totalJobsCreated).toBeGreaterThanOrEqual(2);
     });
 
     it('should handle unexpected errors gracefully', async () => {

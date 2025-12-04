@@ -1,7 +1,6 @@
 import { Inject, Injectable } from '@nestjs/common';
-import { NotificationTemplateResponseDto } from '../dto/notification-template-response.dto';
 import type { INotificationTemplateRepository } from '../../domain/repository/notification-template-repository.interface';
-import { NotificationTemplateMapper } from '../../infrastructure/mappers/notification-template.mapper';
+import { NotificationTemplate } from '../../domain/entities/notification-template.entity';
 
 @Injectable()
 export class GetNotificationTemplateUseCase {
@@ -10,13 +9,13 @@ export class GetNotificationTemplateUseCase {
     private readonly notificationTemplateRepository: INotificationTemplateRepository,
   ) {}
 
-  async execute(name: string): Promise<NotificationTemplateResponseDto | null> {
+  async execute(name: string): Promise<NotificationTemplate | null> {
     const template = await this.notificationTemplateRepository.findByName(name);
 
     if (!template) {
       return null;
     }
 
-    return NotificationTemplateMapper.toResponseDto(template);
+    return template;
   }
 }

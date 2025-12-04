@@ -75,6 +75,32 @@ export class NotificationTemplate {
   get updatedAt(): Date | undefined {
     return this._updatedAt;
   }
+
+  render(
+    channel: string,
+    data: Record<string, any> = {},
+  ): {
+    subject: string;
+    content: string;
+  } {
+    const detail = this._channelDetails[channel];
+    const rawSubject = detail.subject || this._name;
+    const rawContent = detail.body || '';
+    return {
+      subject: NotificationTemplate.applyTemplate(rawSubject, data),
+      content: NotificationTemplate.applyTemplate(rawContent, data),
+    };
+  }
+
+  static applyTemplate(template: string, data: Record<string, any>): string {
+    if (!template) {
+      return '';
+    }
+    return template.replace(/\{\{(\w+)\}\}/g, (match, variableName: string) => {
+      const value = data[variableName];
+      return typeof value === 'string' ? value : match;
+    });
+  }
 }
 
 /**

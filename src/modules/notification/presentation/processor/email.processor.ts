@@ -4,16 +4,12 @@ import { Logger } from '@nestjs/common';
 import { NotificationChannel } from '@common/enums/notification-channel.enum';
 import { EmailJobData } from '../../application/dto/email-job-data.dto';
 import { NotificationUseCase } from '../../application/use-cases/notification.use-case';
-import { UserDataService } from '../../infrastructure/outbound/user-data.service';
 
 @Processor('email-notifications')
 export class EmailProcessor extends WorkerHost {
   private readonly logger = new Logger(EmailProcessor.name);
 
-  constructor(
-    private readonly notificationUseCase: NotificationUseCase,
-    private readonly userDataService: UserDataService,
-  ) {
+  constructor(private readonly notificationUseCase: NotificationUseCase) {
     super();
   }
 
@@ -26,17 +22,12 @@ export class EmailProcessor extends WorkerHost {
     this.logger.log(`Template: ${notificationName}`);
 
     try {
-      // Fetch user data from UserDataService
-      const userData = await this.userDataService.getUserById(userId);
-
-      // Process template variables with user data
-      const processedSubject = this.processTemplate(subject, userData);
-      const processedContent = this.processTemplate(content, userData);
+      const processedSubject = subject;
+      const processedContent = content;
 
       // Console log the email content with user data from service
       console.log('=== EMAIL NOTIFICATION ===');
-      console.log(`To: ${userData.fullName} <${userData.email}>`);
-      console.log(`Company: ${userData.companyName}`);
+      console.log(`To: User ${userId}`);
       console.log(`Subject: ${processedSubject}`);
       console.log('Content:');
       console.log(processedContent);
@@ -75,16 +66,6 @@ export class EmailProcessor extends WorkerHost {
       );
       throw error;
     }
-  }
-
-  /**
-   * Simple template variable replacement
-   * Replaces {{variableName}} with actual values from templateData
-   */
-  private processTemplate(template: string, data: Record<string, any>): string {
-    return template.replace(/\{\{(\w+)\}\}/g, (match, variableName: string) => {
-      return (data[variableName] as string) || match;
-    });
   }
 
   @OnWorkerEvent('completed')

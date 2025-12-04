@@ -4,16 +4,12 @@ import { Logger } from '@nestjs/common';
 import { NotificationChannel } from '@common/enums/notification-channel.enum';
 import { NotificationUseCase } from '../../application/use-cases/notification.use-case';
 import { UiJobData } from '../../application/dto/ui-job-data.dto';
-import { UserDataService } from '../../infrastructure/outbound/user-data.service';
 
 @Processor('ui-notifications')
 export class UiProcessor extends WorkerHost {
   private readonly logger = new Logger(UiProcessor.name);
 
-  constructor(
-    private readonly notificationUseCase: NotificationUseCase,
-    private readonly userDataService: UserDataService,
-  ) {
+  constructor(private readonly notificationUseCase: NotificationUseCase) {
     super();
   }
 
@@ -26,15 +22,11 @@ export class UiProcessor extends WorkerHost {
     this.logger.log(`Notification: ${notificationName}`);
 
     try {
-      // Fetch user data from UserDataService
-      const userData = await this.userDataService.getUserById(userId);
-
-      // Process template variables with user data
-      const processedContent = this.processTemplate(content, userData);
+      const processedContent = content;
 
       // Console log the UI notification content with user data from service
       console.log('=== UI NOTIFICATION ===');
-      console.log(`To: ${userData.fullName} (${userData.companyName})`);
+      console.log(`To: User ${userId}`);
       console.log('Content:');
       console.log(processedContent);
       console.log('========================');
@@ -72,16 +64,6 @@ export class UiProcessor extends WorkerHost {
       );
       throw error;
     }
-  }
-
-  /**
-   * Simple template variable replacement
-   * Replaces {{variableName}} with actual values from templateData
-   */
-  private processTemplate(template: string, data: Record<string, any>): string {
-    return template.replace(/\{\{(\w+)\}\}/g, (match, variableName: string) => {
-      return (data[variableName] as string) || match;
-    });
   }
 
   @OnWorkerEvent('completed')
