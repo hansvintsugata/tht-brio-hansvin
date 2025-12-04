@@ -16,7 +16,7 @@ describe('UiProcessor', () => {
   beforeEach(async () => {
     // Create mock implementations
     mockNotificationUseCase = {
-      createNotification: jest.fn(),
+      createNotificationLog: jest.fn(),
     } as any;
 
     // Mock console.log to avoid test output clutter
@@ -53,7 +53,7 @@ describe('UiProcessor', () => {
     } as any;
 
     it('should process UI notification successfully', async () => {
-      mockNotificationUseCase.createNotification.mockResolvedValue(
+      mockNotificationUseCase.createNotificationLog.mockResolvedValue(
         Notification.create({
           notificationName: 'welcome-ui',
           subject: '',
@@ -65,7 +65,9 @@ describe('UiProcessor', () => {
 
       await processor.process(mockJob);
 
-      expect(mockNotificationUseCase.createNotification).toHaveBeenCalledWith({
+      expect(
+        mockNotificationUseCase.createNotificationLog,
+      ).toHaveBeenCalledWith({
         notificationName: 'welcome-ui',
         subject: '',
         content: 'Hello John Doe, welcome to TechCorp Solutions!',
@@ -87,7 +89,7 @@ describe('UiProcessor', () => {
         },
         updateProgress: jest.fn(),
       } as any;
-      mockNotificationUseCase.createNotification.mockResolvedValue(
+      mockNotificationUseCase.createNotificationLog.mockResolvedValue(
         Notification.create({
           notificationName: 'announcement-ui',
           subject: '',
@@ -100,7 +102,9 @@ describe('UiProcessor', () => {
 
       await processor.process(jobWithVariables);
 
-      expect(mockNotificationUseCase.createNotification).toHaveBeenCalledWith({
+      expect(
+        mockNotificationUseCase.createNotificationLog,
+      ).toHaveBeenCalledWith({
         notificationName: 'announcement-ui',
         subject: '',
         content: 'Dear Jane Smith, your company InnovateTech has a new update.',
@@ -122,7 +126,7 @@ describe('UiProcessor', () => {
         updateProgress: jest.fn(),
       } as any;
 
-      mockNotificationUseCase.createNotification.mockResolvedValue(
+      mockNotificationUseCase.createNotificationLog.mockResolvedValue(
         Notification.create({
           notificationName: 'missing-vars-ui',
           subject: '',
@@ -135,7 +139,9 @@ describe('UiProcessor', () => {
 
       await processor.process(jobWithMissingVariables);
 
-      expect(mockNotificationUseCase.createNotification).toHaveBeenCalledWith({
+      expect(
+        mockNotificationUseCase.createNotificationLog,
+      ).toHaveBeenCalledWith({
         notificationName: 'missing-vars-ui',
         subject: '',
         content:
@@ -146,7 +152,7 @@ describe('UiProcessor', () => {
     });
 
     it('should not depend on user data service', async () => {
-      mockNotificationUseCase.createNotification.mockResolvedValue(
+      mockNotificationUseCase.createNotificationLog.mockResolvedValue(
         Notification.create({
           notificationName: 'welcome-ui',
           subject: '',
@@ -157,19 +163,21 @@ describe('UiProcessor', () => {
       );
 
       await processor.process(mockJob);
-      expect(mockNotificationUseCase.createNotification).toHaveBeenCalled();
+      expect(mockNotificationUseCase.createNotificationLog).toHaveBeenCalled();
       expect(mockJob.updateProgress).toHaveBeenCalledWith(100);
     });
 
     it('should continue processing even if notification creation fails', async () => {
-      mockNotificationUseCase.createNotification.mockRejectedValue(
+      mockNotificationUseCase.createNotificationLog.mockRejectedValue(
         new Error('Database connection failed'),
       );
 
       // Should not throw error, just log the notification creation error
       await processor.process(mockJob);
 
-      expect(mockNotificationUseCase.createNotification).toHaveBeenCalledWith({
+      expect(
+        mockNotificationUseCase.createNotificationLog,
+      ).toHaveBeenCalledWith({
         notificationName: 'welcome-ui',
         subject: '',
         content: 'Hello John Doe, welcome to TechCorp Solutions!',
@@ -191,7 +199,7 @@ describe('UiProcessor', () => {
         updateProgress: jest.fn(),
       } as any;
 
-      mockNotificationUseCase.createNotification.mockResolvedValue(
+      mockNotificationUseCase.createNotificationLog.mockResolvedValue(
         Notification.create({
           notificationName: 'simple-ui',
           subject: '',
@@ -203,7 +211,9 @@ describe('UiProcessor', () => {
 
       await processor.process(jobWithoutVariables);
 
-      expect(mockNotificationUseCase.createNotification).toHaveBeenCalledWith({
+      expect(
+        mockNotificationUseCase.createNotificationLog,
+      ).toHaveBeenCalledWith({
         notificationName: 'simple-ui',
         subject: '',
         content: 'This is a simple UI notification without any variables.',

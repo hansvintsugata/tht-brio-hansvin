@@ -33,7 +33,7 @@ export class UiProcessor extends WorkerHost {
 
       // Create notification record after successful UI processing
       try {
-        await this.notificationUseCase.createNotification({
+        await this.notificationUseCase.createNotificationLog({
           notificationName: notificationName,
           subject: '',
           content: processedContent,

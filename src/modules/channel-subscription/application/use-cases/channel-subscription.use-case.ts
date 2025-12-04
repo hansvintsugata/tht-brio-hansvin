@@ -16,10 +16,9 @@ export class ChannelSubscriptionUseCase {
   ) {}
 
   /**
-   * Get channels for user and/or company with simplified && logic
-   * If both userId and companyId are provided, returns channels that exist in both subscriptions
-   * If only one is provided, returns all channels for that subscriber
-   * Returns all subscriptions (both active and inactive)
+   * Get channels for user and/or company with AND semantics on active subscriptions
+   * If both userId and companyId are provided, returns channels that are active for BOTH
+   * If only one is provided, returns all channels for that subscriber (active and inactive)
    * Results are grouped by channel
    */
   async getChannels(
@@ -53,26 +52,32 @@ export class ChannelSubscriptionUseCase {
         );
     }
 
-    // Simplified logic: return all subscriptions based on && logic
+    // AND semantics on active subscriptions when both IDs provided
     let filteredSubscriptions: ChannelSubscription[];
 
     if (userId && companyId) {
-      // Both provided: find channels that exist in both user and company subscriptions
-      const userChannels = new Set(userSubscriptions.map((sub) => sub.channel));
-      const companyChannels = new Set(
-        companySubscriptions.map((sub) => sub.channel),
+      // Both provided: consider only ACTIVE channels common to user and company
+      const userActiveChannels = new Set(
+        userSubscriptions.filter((s) => s.isActive).map((s) => s.channel),
+      );
+      const companyActiveChannels = new Set(
+        companySubscriptions.filter((s) => s.isActive).map((s) => s.channel),
       );
 
-      // Find intersection (channels that exist in both) - simplified without isActive filter
-      const commonChannels = new Set(
-        [...userChannels].filter((channel) => companyChannels.has(channel)),
+      // Intersection of active channels
+      const commonActiveChannels = new Set(
+        [...userActiveChannels].filter((channel) =>
+          companyActiveChannels.has(channel),
+        ),
       );
 
-      // Return all subscriptions for common channels (both active and inactive)
+      // Return only ACTIVE subscriptions for common active channels
       filteredSubscriptions = [
-        ...userSubscriptions.filter((sub) => commonChannels.has(sub.channel)),
-        ...companySubscriptions.filter((sub) =>
-          commonChannels.has(sub.channel),
+        ...userSubscriptions.filter(
+          (sub) => sub.isActive && commonActiveChannels.has(sub.channel),
+        ),
+        ...companySubscriptions.filter(
+          (sub) => sub.isActive && commonActiveChannels.has(sub.channel),
         ),
       ];
     } else if (userId) {

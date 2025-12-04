@@ -2,6 +2,7 @@ import { Injectable, Inject } from '@nestjs/common';
 import { Notification } from '../../domain/entities/notification.entity';
 import type { INotificationRepository } from '../../domain/repository/notification-repository.interface';
 import { NotificationChannel } from '@common/enums/notification-channel.enum';
+import { SubscriberType } from '@common/enums/subscriber-types.enum';
 import { CreateNotificationDto } from '../dto/create-notification.dto';
 import {
   PushNotificationRequestDto,
@@ -62,7 +63,7 @@ export class NotificationUseCase {
     };
   }
 
-  async createNotification(
+  async createNotificationLog(
     params: CreateNotificationDto,
   ): Promise<Notification> {
     const notification = Notification.create({
@@ -105,10 +106,14 @@ export class NotificationUseCase {
       // Extract subscribed channels (only active ones)
       const subscribedChannels = new Set<NotificationChannel>();
       for (const group of channelSubscriptions) {
-        const hasActiveSubscription = group.subscriptions.some(
-          (sub) => sub.isActive,
+        const hasActiveUser = group.subscriptions.some(
+          (sub) => sub.subscriberType === SubscriberType.USER && sub.isActive,
         );
-        if (hasActiveSubscription) {
+        const hasActiveCompany = group.subscriptions.some(
+          (sub) =>
+            sub.subscriberType === SubscriberType.COMPANY && sub.isActive,
+        );
+        if (hasActiveUser && hasActiveCompany) {
           subscribedChannels.add(group.channel);
         }
       }

@@ -15,7 +15,7 @@ describe('EmailProcessor', () => {
   beforeEach(async () => {
     // Create mocks
     mockNotificationUseCase = {
-      createNotification: jest.fn(),
+      createNotificationLog: jest.fn(),
     } as any;
 
     // Mock console.log to avoid cluttering test output
@@ -53,7 +53,7 @@ describe('EmailProcessor', () => {
 
   describe('process', () => {
     it('should process email job successfully', async () => {
-      mockNotificationUseCase.createNotification.mockResolvedValue(
+      mockNotificationUseCase.createNotificationLog.mockResolvedValue(
         Notification.create({
           notificationName: 'welcome-email',
           subject: 'Welcome John!',
@@ -66,7 +66,9 @@ describe('EmailProcessor', () => {
       await processor.process(mockJob as Job<EmailJobData>);
 
       // Verify notification was created with provided content
-      expect(mockNotificationUseCase.createNotification).toHaveBeenCalledWith({
+      expect(
+        mockNotificationUseCase.createNotificationLog,
+      ).toHaveBeenCalledWith({
         notificationName: 'welcome-email',
         subject: 'Welcome John!',
         content: 'Hello John Doe, welcome to TechCorp Solutions!',
@@ -98,7 +100,7 @@ describe('EmailProcessor', () => {
           userId: 'user-001',
         },
       };
-      mockNotificationUseCase.createNotification.mockResolvedValue(
+      mockNotificationUseCase.createNotificationLog.mockResolvedValue(
         Notification.create({
           notificationName: 'test-email',
           subject: 'Hello {{missingVar}}!',
@@ -110,7 +112,9 @@ describe('EmailProcessor', () => {
 
       await processor.process(jobWithMissingVars as Job<EmailJobData>);
 
-      expect(mockNotificationUseCase.createNotification).toHaveBeenCalledWith({
+      expect(
+        mockNotificationUseCase.createNotificationLog,
+      ).toHaveBeenCalledWith({
         notificationName: 'test-email',
         subject: 'Hello {{missingVar}}!',
         content: 'Your {{nonExistent}} variable',
@@ -121,13 +125,13 @@ describe('EmailProcessor', () => {
 
     it('should handle generic processing path without user data', async () => {
       await processor.process(mockJob as Job<EmailJobData>);
-      expect(mockNotificationUseCase.createNotification).toHaveBeenCalled();
+      expect(mockNotificationUseCase.createNotificationLog).toHaveBeenCalled();
       expect(mockJob.updateProgress).toHaveBeenCalledWith(100);
     });
 
     it('should continue processing even if notification creation fails', async () => {
       const notificationError = new Error('Database connection failed');
-      mockNotificationUseCase.createNotification.mockRejectedValue(
+      mockNotificationUseCase.createNotificationLog.mockRejectedValue(
         notificationError,
       );
 
@@ -137,7 +141,7 @@ describe('EmailProcessor', () => {
       await processor.process(mockJob as Job<EmailJobData>);
 
       // Verify notification creation was attempted
-      expect(mockNotificationUseCase.createNotification).toHaveBeenCalled();
+      expect(mockNotificationUseCase.createNotificationLog).toHaveBeenCalled();
 
       // Verify error was logged but job completed successfully
       expect(loggerErrorSpy).toHaveBeenCalledWith(
@@ -150,7 +154,7 @@ describe('EmailProcessor', () => {
     });
 
     it('should handle default content when user is unknown (pre-rendered)', async () => {
-      mockNotificationUseCase.createNotification.mockResolvedValue(
+      mockNotificationUseCase.createNotificationLog.mockResolvedValue(
         Notification.create({
           notificationName: 'welcome-email',
           subject: 'Welcome Unknown!',
@@ -172,7 +176,9 @@ describe('EmailProcessor', () => {
 
       await processor.process(jobForUnknownUser as Job<EmailJobData>);
 
-      expect(mockNotificationUseCase.createNotification).toHaveBeenCalledWith({
+      expect(
+        mockNotificationUseCase.createNotificationLog,
+      ).toHaveBeenCalledWith({
         notificationName: 'welcome-email',
         subject: 'Welcome Unknown!',
         content: 'Hello Unknown User, welcome to Unknown Company!',

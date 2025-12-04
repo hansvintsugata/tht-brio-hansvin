@@ -35,7 +35,7 @@ export class EmailProcessor extends WorkerHost {
 
       // Create notification record after successful email processing
       try {
-        await this.notificationUseCase.createNotification({
+        await this.notificationUseCase.createNotificationLog({
           notificationName: notificationName,
           subject: processedSubject,
           content: processedContent,

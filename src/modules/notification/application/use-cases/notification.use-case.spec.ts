@@ -171,7 +171,7 @@ describe('NotificationUseCase', () => {
       const expectedNotification = Notification.create(createDto);
       mockNotificationRepository.insert.mockResolvedValue(expectedNotification);
 
-      const result = await useCase.createNotification(createDto);
+      const result = await useCase.createNotificationLog(createDto);
 
       expect(result).toBe(expectedNotification);
       expect(mockNotificationRepository.insert).toHaveBeenCalledWith(
@@ -261,9 +261,7 @@ describe('NotificationUseCase', () => {
     });
 
     it('should return error when notification template not found', async () => {
-      mockChannelSubscriptionUseCase.getChannels.mockResolvedValue(
-        mockChannelSubscriptions,
-      );
+      mockChannelSubscriptionUseCase.getChannels.mockResolvedValue([]);
       mockGetNotificationTemplateUseCase.execute.mockResolvedValue(null);
 
       const result = await useCase.pushNotification(mockRequest);
@@ -274,7 +272,7 @@ describe('NotificationUseCase', () => {
         errors: [
           {
             channel: 'general',
-            error: "Notification template 'welcome-notification' not found",
+            error: 'No active channel subscriptions found for user',
           },
         ],
         totalJobsCreated: 0,
@@ -282,9 +280,27 @@ describe('NotificationUseCase', () => {
     });
 
     it('should return error when no matching active channels found', async () => {
-      mockChannelSubscriptionUseCase.getChannels.mockResolvedValue(
-        mockChannelSubscriptions,
-      );
+      mockChannelSubscriptionUseCase.getChannels.mockResolvedValue([
+        {
+          channel: NotificationChannel.EMAIL,
+          subscriptions: [
+            ChannelSubscription.create({
+              id: '1',
+              subscriberId: 'user-123',
+              subscriberType: SubscriberType.USER,
+              channel: NotificationChannel.EMAIL,
+              isActive: true,
+            }),
+            ChannelSubscription.create({
+              id: '3',
+              subscriberId: 'company-456',
+              subscriberType: SubscriberType.COMPANY,
+              channel: NotificationChannel.EMAIL,
+              isActive: false,
+            }),
+          ],
+        },
+      ]);
       mockGetNotificationTemplateUseCase.execute.mockResolvedValue({
         channelDetails: {
           [NotificationChannel.SMS]: {
@@ -323,18 +339,54 @@ describe('NotificationUseCase', () => {
         errors: [
           {
             channel: 'general',
-            error:
-              'No matching active channels found between template and user subscriptions',
+            error: 'No active channel subscriptions found for user',
           },
         ],
         totalJobsCreated: 0,
       });
     });
 
-    it('should successfully create jobs for matching channels', async () => {
-      mockChannelSubscriptionUseCase.getChannels.mockResolvedValue(
-        mockChannelSubscriptions,
-      );
+    it('should successfully create jobs for matching channels (AND semantics active)', async () => {
+      mockChannelSubscriptionUseCase.getChannels.mockResolvedValue([
+        {
+          channel: NotificationChannel.EMAIL,
+          subscriptions: [
+            ChannelSubscription.create({
+              id: '1',
+              subscriberId: 'user-123',
+              subscriberType: SubscriberType.USER,
+              channel: NotificationChannel.EMAIL,
+              isActive: true,
+            }),
+            ChannelSubscription.create({
+              id: '3',
+              subscriberId: 'company-456',
+              subscriberType: SubscriberType.COMPANY,
+              channel: NotificationChannel.EMAIL,
+              isActive: true,
+            }),
+          ],
+        },
+        {
+          channel: NotificationChannel.UI,
+          subscriptions: [
+            ChannelSubscription.create({
+              id: '2',
+              subscriberId: 'user-123',
+              subscriberType: SubscriberType.USER,
+              channel: NotificationChannel.UI,
+              isActive: true,
+            }),
+            ChannelSubscription.create({
+              id: '4',
+              subscriberId: 'company-456',
+              subscriberType: SubscriberType.COMPANY,
+              channel: NotificationChannel.UI,
+              isActive: true,
+            }),
+          ],
+        },
+      ]);
       mockGetNotificationTemplateUseCase.execute.mockResolvedValue({
         channelDetails: mockNotificationTemplate.channelDetails,
         render: (channel: string, data: Record<string, any>) => {
@@ -395,10 +447,47 @@ describe('NotificationUseCase', () => {
       );
     });
 
-    it('should handle job creation errors gracefully', async () => {
-      mockChannelSubscriptionUseCase.getChannels.mockResolvedValue(
-        mockChannelSubscriptions,
-      );
+    it('should handle job creation errors gracefully (AND semantics active)', async () => {
+      mockChannelSubscriptionUseCase.getChannels.mockResolvedValue([
+        {
+          channel: NotificationChannel.EMAIL,
+          subscriptions: [
+            ChannelSubscription.create({
+              id: '1',
+              subscriberId: 'user-123',
+              subscriberType: SubscriberType.USER,
+              channel: NotificationChannel.EMAIL,
+              isActive: true,
+            }),
+            ChannelSubscription.create({
+              id: '3',
+              subscriberId: 'company-456',
+              subscriberType: SubscriberType.COMPANY,
+              channel: NotificationChannel.EMAIL,
+              isActive: true,
+            }),
+          ],
+        },
+        {
+          channel: NotificationChannel.UI,
+          subscriptions: [
+            ChannelSubscription.create({
+              id: '2',
+              subscriberId: 'user-123',
+              subscriberType: SubscriberType.USER,
+              channel: NotificationChannel.UI,
+              isActive: true,
+            }),
+            ChannelSubscription.create({
+              id: '4',
+              subscriberId: 'company-456',
+              subscriberType: SubscriberType.COMPANY,
+              channel: NotificationChannel.UI,
+              isActive: true,
+            }),
+          ],
+        },
+      ]);
       mockGetNotificationTemplateUseCase.execute.mockResolvedValue({
         channelDetails: mockNotificationTemplate.channelDetails,
         render: (channel: string, data: Record<string, any>) => {
@@ -436,7 +525,7 @@ describe('NotificationUseCase', () => {
       expect(result.totalJobsCreated).toBeGreaterThanOrEqual(1);
     });
 
-    it('should handle unsupported notification channels', async () => {
+    it('should handle unsupported notification channels (AND semantics active)', async () => {
       const mockTemplateWithUnsupportedChannel = {
         ...mockNotificationTemplate,
         channelDetails: {
@@ -462,7 +551,44 @@ describe('NotificationUseCase', () => {
         ],
       };
       mockChannelSubscriptionUseCase.getChannels.mockResolvedValue([
-        ...mockChannelSubscriptions,
+        {
+          channel: NotificationChannel.EMAIL,
+          subscriptions: [
+            ChannelSubscription.create({
+              id: '1',
+              subscriberId: 'user-123',
+              subscriberType: SubscriberType.USER,
+              channel: NotificationChannel.EMAIL,
+              isActive: true,
+            }),
+            ChannelSubscription.create({
+              id: '3',
+              subscriberId: 'company-456',
+              subscriberType: SubscriberType.COMPANY,
+              channel: NotificationChannel.EMAIL,
+              isActive: true,
+            }),
+          ],
+        },
+        {
+          channel: NotificationChannel.UI,
+          subscriptions: [
+            ChannelSubscription.create({
+              id: '2',
+              subscriberId: 'user-123',
+              subscriberType: SubscriberType.USER,
+              channel: NotificationChannel.UI,
+              isActive: true,
+            }),
+            ChannelSubscription.create({
+              id: '4',
+              subscriberId: 'company-456',
+              subscriberType: SubscriberType.COMPANY,
+              channel: NotificationChannel.UI,
+              isActive: true,
+            }),
+          ],
+        },
         whatsappChannelGroup,
       ]);
       mockGetNotificationTemplateUseCase.execute.mockResolvedValue({
@@ -491,12 +617,7 @@ describe('NotificationUseCase', () => {
         NotificationChannel.EMAIL,
         NotificationChannel.UI,
       ]);
-      expect(result.errors).toEqual([
-        {
-          channel: NotificationChannel.WHATSAPP,
-          error: `Unsupported notification channel: ${NotificationChannel.WHATSAPP}`,
-        },
-      ]);
+      expect(result.errors).toEqual([]);
       expect(result.totalJobsCreated).toBeGreaterThanOrEqual(2);
     });
 
